@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Retirar Senha</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .container {
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      padding: 60px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 40px rgba(0,0,0,0.4);
+      width: 90%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 40px;
+    }
+
+    button {
+      background: #00ffcc;
+      color: #003333;
+      font-size: 1.6rem;
+      font-weight: bold;
+      padding: 20px 50px;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin: 10px;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      background: #00e6b8;
+    }
+
+    .senha-gerada {
+      margin-top: 40px;
+      font-size: 4rem;
+      font-weight: bold;
+      color: #00ffcc;
+    }
+
+    .modo {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>RETIRE SUA SENHA</h1>
+
+    <button onclick="gerarSenha()">GERAR SENHA</button>
+    <button onclick="resetTeste()">Reset Teste</button>
+
+    <div class="senha-gerada" id="senhaGerada"></div>
+    <div class="modo" id="modoInfo"></div>
+  </div>
+
+  <script type="module">
+
+    // ======= CONFIGURAÇÃO =======
+    const modoTeste = true; 
+    // true = não usa Firebase
+    // false = usa Firebase real
+    // ============================
+
+    let db = null;
+
+    if (!modoTeste) {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+      const { getFirestore, collection, addDoc, getDocs } =
+        await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+      const firebaseConfig = {
+        apiKey: "SUA_CHAVE",
+        authDomain: "SEU_PROJETO.firebaseapp.com",
+        projectId: "SEU_PROJETO",
+        storageBucket: "SEU_PROJETO.appspot.com",
+        messagingSenderId: "SEU_ID",
+        appId: "SEU_APP_ID"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+
+      window.firebaseFuncs = { collection, addDoc, getDocs };
+    }
+
+    document.getElementById("modoInfo").innerText =
+      modoTeste ? "🧪 MODO TESTE (Offline)" : "🌐 MODO ONLINE (Firebase)";
+
+    async function gerarSenha() {
+
+      if (modoTeste) {
+        gerarSenhaTeste();
+      } else {
+        gerarSenhaFirebase();
+      }
+    }
+
+    // ===== MODO TESTE =====
+    function gerarSenhaTeste() {
+      let contador = localStorage.getItem("contadorTeste");
+
+      if (!contador) contador = 0;
+
+      contador++;
+      localStorage.setItem("contadorTeste", contador);
+
+      const codigo = "T" + contador.toString().padStart(3, '0');
+      document.getElementById("senhaGerada").textContent = codigo;
+    }
+
+    function resetTeste() {
+      if (modoTeste) {
+        localStorage.removeItem("contadorTeste");
+        alert("Contador de teste resetado!");
+      }
+    }
+
+    // ===== MODO FIREBASE =====
+    async function gerarSenhaFirebase() {
+      const { collection, addDoc, getDocs } = window.firebaseFuncs;
+
+      const snapshot = await getDocs(collection(db, "senhas"));
+      const numero = snapshot.size + 1;
+      const codigo = "A" + numero.toString().padStart(3, '0');
+
+      await addDoc(collection(db, "senhas"), {
+        numero,
+        codigo,
+        status: "aguardando",
+        guiche: null,
+        timestamp: Date.now()
+      });
+
+      document.getElementById("senhaGerada").textContent = codigo;
+    }
+
+    window.gerarSenha = gerarSenha;
+    window.resetTeste = resetTeste;
+
+  </script>
+
+</body>
+</html>
