@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Guichê de Atendimento</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .container {
+      background: rgba(255,255,255,0.1);
+      padding: 50px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 40px rgba(0,0,0,0.4);
+      text-align: center;
+      width: 90%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 30px;
+      letter-spacing: 1px;
+    }
+
+    .guiche-info {
+      margin-bottom: 30px;
+    }
+
+    input {
+      width: 120px;
+      padding: 10px;
+      font-size: 1.2rem;
+      text-align: center;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      margin-top: 20px;
+      background: #00ffcc;
+      color: #003333;
+      font-size: 1.5rem;
+      font-weight: bold;
+      padding: 15px 40px;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      background: #00e6b8;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .senha-atual {
+      margin-top: 40px;
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #00ffcc;
+      animation: aparecer 0.5s ease;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 1.2rem;
+      opacity: 0.8;
+    }
+
+    @keyframes aparecer {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      button { font-size: 1.2rem; padding: 12px 25px; }
+      .senha-atual { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>GUICHÊ DE ATENDIMENTO</h1>
+
+    <div class="guiche-info">
+      <label>Nº do Guichê:</label><br><br>
+      <input type="number" id="guicheNumero" placeholder="Ex: 1">
+    </div>
+
+    <button onclick="chamarSenha()">CHAMAR PRÓXIMA</button>
+
+    <div class="senha-atual" id="chamada">---</div>
+    <div class="status">Aguardando chamada</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      query, 
+      where, 
+      getDocs, 
+      updateDoc, 
+      doc 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_CHAVE",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      projectId: "SEU_PROJETO",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "SEU_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function chamarSenha() {
+      const guiche = document.getElementById("guicheNumero").value;
+
+      if (!guiche) {
+        alert("Informe o número do guichê.");
+        return;
+      }
+
+      const q = query(
+        collection(db, "senhas"), 
+        where("status", "==", "aguardando")
+      );
+
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        const senha = snapshot.docs[0];
+
+        await updateDoc(doc(db, "senhas", senha.id), {
+          status: "chamado",
+          guiche: guiche
+        });
+
+        const chamadaEl = document.getElementById("chamada");
+        chamadaEl.textContent = senha.data().codigo;
+
+        chamadaEl.style.animation = "none";
+        void chamadaEl.offsetWidth;
+        chamadaEl.style.animation = "aparecer 0.5s ease";
+      } else {
+        alert("Nenhuma senha aguardando.");
+      }
+    }
+
+    window.chamarSenha = chamarSenha;
+  </script>
+
+</body>
+</html>
