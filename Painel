@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Senhas</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .container {
+      text-align: center;
+      width: 90%;
+    }
+
+    .titulo {
+      font-size: 3vw;
+      margin-bottom: 40px;
+      letter-spacing: 2px;
+      opacity: 0.8;
+    }
+
+    .senha-box {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 60px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 40px rgba(0,0,0,0.4);
+      transition: transform 0.3s ease;
+    }
+
+    .senha {
+      font-size: 10vw;
+      font-weight: bold;
+      color: #00ffcc;
+      animation: piscar 1s ease-in-out 2;
+    }
+
+    .guiche {
+      font-size: 4vw;
+      margin-top: 20px;
+      color: #ffffff;
+    }
+
+    @keyframes piscar {
+      0% { opacity: 0.2; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .rodape {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.2vw;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="titulo">CHAMADA DE SENHAS</div>
+
+    <div class="senha-box">
+      <div class="senha" id="senha">---</div>
+      <div class="guiche" id="guiche">Aguardando chamada</div>
+    </div>
+  </div>
+
+  <div class="rodape">
+    Sistema de Atendimento
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      query, 
+      orderBy, 
+      limit, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_CHAVE",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      projectId: "SEU_PROJETO",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "SEU_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const senhaEl = document.getElementById("senha");
+    const guicheEl = document.getElementById("guiche");
+
+    const q = query(
+      collection(db, "senhas"), 
+      orderBy("timestamp", "desc"), 
+      limit(1)
+    );
+
+    onSnapshot(q, (snapshot) => {
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+
+        if (data.status === "chamado") {
+          senhaEl.textContent = data.codigo;
+          guicheEl.textContent = "Guichê " + data.guiche;
+
+          // reinicia animação
+          senhaEl.style.animation = "none";
+          void senhaEl.offsetWidth;
+          senhaEl.style.animation = "piscar 1s ease-in-out 2";
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
+
